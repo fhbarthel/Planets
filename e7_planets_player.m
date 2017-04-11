@@ -20,3 +20,4 @@ elseif (scrap_column > player_column && ~isinf(map.grid(player_row, player_colum
 end
 where = '.';
 end
+%yo dont hit the ghosts
