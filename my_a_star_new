@@ -1,0 +1,169 @@
+function [steps_taken] = my_a_star_new(map)
+tic;
+count = 1;
+location_scrap = map.scraps(1).location;
+location_player = map.player.location(end, :);
+
+
+player_start_row = location_player(1);
+player_start_col = location_player(2);
+scrap_row = location_scrap(1);
+scrap_col = location_scrap(2);
+
+m = size(map.grid,1);
+n = size(map.grid,2);
+basis_array = zeros(m,n);
+
+for j = 1:n
+    for i= 1: m
+        basis_array(i,j) = count;
+        count = count +1;
+    end
+end
+
+
+closed_list = cell(1,2);
+closed_list{1} = (basis_array(player_start_row, player_start_col));
+closed_list{2} = [0];
+open_list = cell(1,2);
+null_list = [1: (m*n)];
+null_list(basis_array(player_start_row, player_start_col)) = 0;
+g_base = 0;
+
+
+
+while (location_player(1) ~= location_scrap(1)) | (location_player(2) ~= location_scrap(2))
+    
+    % %      checks spaces adjacent to all closed list values and puts them in the open list
+    
+    %%checks element above node as nighbor
+    element_count = (closed_list{end,1});
+     if sum(((floor((element_count-1)/m))-floor((element_count-2)/m))*m + mod(element_count - 1, m) + (floor((element_count-1)/m))*m== null_list) ~=0
+        [neighbor_row,neighbor_col] = ind2sub([m,n],((floor((element_count-1)/m))-floor((element_count-2)/m))*m + mod(element_count - 1, m) + (floor((element_count-1)/m))*m);
+        neighbor_loc = ((floor((element_count-1)/m))-floor((element_count-2)/m))*m + mod(element_count - 1, m) + (floor((element_count-1)/m))*m;
+        parent_loc = basis_array(closed_list{end,1});
+        h = h_cost(map, neighbor_row, neighbor_col, scrap_row, scrap_col, m );
+        g = g_base+1;
+        f = h+g;
+        open_list{end, 1} = f;
+        open_list{end, 2}= [neighbor_loc, parent_loc, g,h];
+        open_list = [ open_list; {[], []}];
+        null_list(neighbor_loc) = 0;
+    end
+    %%checks element below node as nighbor
+
+    element_count = (closed_list{end,1});
+    if sum((floor((element_count-1)/m)) * m + mod(element_count, m)+1== null_list) ~=0
+        [neighbor_row,neighbor_col] = ind2sub([m,n],(floor((element_count-1)/m)) * m + mod(element_count, m)+1);
+        neighbor_loc = (floor((element_count-1)/m)) * m + mod(element_count, m)+1;
+        parent_loc = basis_array(closed_list{end,1});       
+        h = h_cost(map, neighbor_row, neighbor_col, scrap_row, scrap_col, m );
+        g = g_base+1;
+        f = h+g;
+        open_list{end, 1} = f;
+        open_list{end, 2}= [neighbor_loc, parent_loc, g,h];
+        open_list = [ open_list; {[], []}];
+        null_list(neighbor_loc) = 0;
+    end
+    %%checks element to the right of node as nighbor
+    
+    element_count = (closed_list{end,1});
+    if sum((mod(element_count + m - 1, n * m) + 1)== null_list) ~=0
+        [neighbor_row,neighbor_col] = ind2sub([m,n],(mod(element_count + m - 1, n * m) + 1));
+        neighbor_loc = (mod(element_count + m - 1, n * m) + 1);
+        parent_loc = basis_array(closed_list{end,1});
+        h = h_cost(map, neighbor_row, neighbor_col, scrap_row, scrap_col, m );
+        g = g_base+1;
+        f = h+g;
+        open_list{end, 1} = f;
+        open_list{end, 2}= [neighbor_loc, parent_loc, g,h];
+        open_list = [ open_list; {[], []}];
+        null_list(neighbor_loc) = 0;
+    end
+    %%checks element to the left of node as nighbor
+    element_count = basis_array(closed_list{end,1});
+    if sum((mod(element_count-m-1,n*m)+1)== null_list) ~=0
+        [neighbor_row,neighbor_col] = ind2sub([m,n],(mod(element_count-m-1,n*m)+1));
+        neighbor_loc = (mod(element_count-m-1,n*m)+1);
+        parent_loc = basis_array(closed_list{end,1});
+        h = h_cost(map, neighbor_row, neighbor_col, scrap_row, scrap_col, m );
+        g = g_base+1;
+        f = h+g;
+        open_list{end, 1} = f;
+        open_list{end, 2}= [neighbor_loc, parent_loc, g,h];
+        open_list = [ open_list; {[], []}];
+        null_list(neighbor_loc) = 0;
+    end
+    
+    
+    % find smallest f
+    smallestf = open_list{1,1};
+    smallesth = open_list{1,2}(4);
+    
+    index = 1;
+    for i = 2: size(open_list,1)-1
+        if open_list{i,1} >= smallestf
+            if open_list{i,1} == smallestf
+                if open_list{i,2}(4) < smallesth
+                    smallestf = open_list{i,1};
+                    smallesth = open_list{i,2}(4);
+                    index = i;
+                end
+            end
+        else 
+            smallestf =open_list{i,1};
+            index = i;
+        end
+    end
+
+    %%update closed list with new node
+    closed_list = [closed_list; {[],[]}];
+    closed_list{end,1} = open_list{index,2}(1);
+    parent = open_list{index,2}(2);
+    closed_list{end,2} = parent;
+    
+    %% update current location and its values
+    new_loc_index = open_list{index,2}(1);
+    [current_row,current_col] = ind2sub([m,n],new_loc_index);
+    location_player = [current_row,current_col];
+    null_list(location_player) = 0;
+    g_base = open_list{index, 2}(3);
+    
+    %delete node from open list
+    if index == 1
+        open_list = [open_list((2:end),:)];
+    elseif index == size(open_list,1)
+        open_list = [open_list((1:end-1),:)];
+    else
+        open_list = [open_list((1:index-1),:); open_list((index+1:end),:)];
+    end
+    
+end
+
+steps_taken(1) = location_player(1) + (location_player(2)-1)*m;
+current = closed_list{end,2};
+steps_taken = [steps_taken; current];
+
+% 
+% while current ~= 0
+%     for i =  size(closed_list,1)-1:-1:1
+%         steps_taken = [steps_taken ; current];
+%         if closed_list{i,1} == current
+%             current = closed_list{i,2};
+%         end
+%     end
+% end
+
+while current ~= 0
+        for i =  size(closed_list,1)-1:-1:1
+        if closed_list{i,1} == current
+            current = closed_list{i,2};
+            steps_taken = [steps_taken ; current];
+        end
+    end
+end
+steps_taken(end) = [];
+
+steps_taken = flipud(steps_taken);
+toc;
+end
